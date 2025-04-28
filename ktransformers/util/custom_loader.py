@@ -7,9 +7,15 @@ from typing import Sequence
 import os
 from enum import IntEnum
 import torch
-import KTransformersOps
+try:
+    import KTransformersOps
+except ImportError:
+    KTransformersOps = None
 from safetensors import safe_open
-from ktransformers.ktransformers_ext.triton.fp8gemm import fp8_gemm, act_quant, weight_dequant
+try:
+    from ktransformers.ktransformers_ext.triton.fp8gemm import fp8_gemm, act_quant, weight_dequant
+except Exception:
+    fp8_gemm = act_quant = weight_dequant = None
 from safetensors.torch import save_file
 
 class SafeTensorLoader:

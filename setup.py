@@ -226,7 +226,8 @@ class VersionInfo:
         elif ROCM_HOME is not None:
             backend_version = f"rocm{self.get_rocm_bare_metal_version(ROCM_HOME)}"
         else:
-            raise ValueError("Unsupported backend: CUDA_HOME MUSA_HOME ROCM_HOME all not set.")
+            #raise ValueError("Unsupported backend: CUDA_HOME MUSA_HOME ROCM_HOME all not set.")
+            backend_version="cpu"
         package_version = f"{flash_version}+{backend_version}torch{torch_version}{cpu_instruct}"
         if full_version:
             return package_version
@@ -496,8 +497,9 @@ class CMakeBuild(BuildExtension):
         elif ROCM_HOME is not None:
             cmake_args += ["-DKTRANSFORMERS_USE_ROCM=ON"]
         else:
-            raise ValueError("Unsupported backend: CUDA_HOME, MUSA_HOME, and ROCM_HOME are not set.")
-        
+            #raise ValueError("Unsupported backend: CUDA_HOME, MUSA_HOME, and ROCM_HOME are not set.")
+            cmake_args += ["-DKTRANSFORMERS_USE_CPU=ON"]  # 明确启用 CPU 模式
+            print("Warning: Building CPU-only version.")
         cmake_args = get_cmake_abi_args(cmake_args)
         # log cmake_args
         print("CMake args:", cmake_args)
@@ -621,26 +623,36 @@ elif MUSA_HOME is not None:
         }
     )
 else:
-    raise ValueError("Unsupported backend: CUDA_HOME and MUSA_HOME are not set.")
+    #raise ValueError("Unsupported backend: CUDA_HOME and MUSA_HOME are not set.")
+    print("Warning: CUDA/MUSA/ROCM not found, only building CPU extensions.")
+    ops_module = None
 
 ext_modules = [
     CMakeExtension("cpuinfer_ext", os.fspath(Path("").resolve() / "csrc" / "ktransformers_ext")),
-    ops_module,
-    CUDAExtension(
-        'vLLMMarlin', [
-            'csrc/custom_marlin/binding.cpp',
-            'csrc/custom_marlin/gptq_marlin/gptq_marlin.cu',
-            'csrc/custom_marlin/gptq_marlin/gptq_marlin_repack.cu',
-        ],
-        extra_compile_args={
-            'cxx': ['-O3'],
-            'nvcc': ['-O3', '-Xcompiler', '-fPIC'],
-        },
-    )
-]
-if with_balance:
-    print("using balance_serve")
+ ]
+
+if ops_module is not None:
+    ext_modules.append(ops_module)
+
+# 选择性添加 vLLMMarlin（仅 CUDA 可用时）
+if CUDA_HOME is not None:
     ext_modules.append(
+        CUDAExtension(
+            'vLLMMarlin', [
+                'csrc/custom_marlin/binding.cpp',
+                'csrc/custom_marlin/gptq_marlin/gptq_marlin.cu',
+                'csrc/custom_marlin/gptq_marlin/gptq_marlin_repack.cu',
+            ],
+            extra_compile_args={
+                'cxx': ['-O3'],
+                'nvcc': ['-O3', '-Xcompiler', '-fPIC'],
+            },
+        )
+    )
+
+if with_balance:
+   print("using balance_serve")
+   ext_modules.append(
         CMakeExtension("balance_serve", os.fspath(Path("").resolve()/ "csrc"/ "balance_serve"))
     )
 

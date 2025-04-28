@@ -20,7 +20,7 @@
 """LLaMA model configuration"""
 
 from transformers.configuration_utils import PretrainedConfig
-from transformers.modeling_rope_utils import rope_config_validation
+#from transformers.modeling_rope_utils import rope_config_validation
 
 
 class LlamaConfig(PretrainedConfig):

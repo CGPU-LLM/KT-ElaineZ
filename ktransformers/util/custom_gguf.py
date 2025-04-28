@@ -24,7 +24,10 @@ from typing import Sequence
 import os
 from enum import IntEnum
 import torch
-import KTransformersOps
+try:
+    import KTransformersOps
+except ImportError:
+    KTransformersOps = None
 from .custom_loader import SafeTensorLoader
 import ctypes
 import math

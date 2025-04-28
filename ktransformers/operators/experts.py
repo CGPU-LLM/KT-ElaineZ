@@ -35,6 +35,7 @@ from abc import ABC, abstractmethod
 from ktransformers.operators.linear import KLinearMarlin, KLinearTorch, KTransformersLinear
 import time
 from ktransformers.operators.cpuinfer import CPUInfer
+from ktransformers.util.swapper import Swapper
 
 
 def deduplicate_and_sort(lst):
