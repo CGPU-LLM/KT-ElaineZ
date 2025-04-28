@@ -1,8 +1,8 @@
 import fire
 import psutil
 import os
-from ktransformers.local_chat import local_chat
-
+#from ktransformers.local_chat import local_chat
+from ktransformers.local_chat import load_model,run_inference
 # 你要批量测试的prompt列表
 prompts = [
     "你好",
@@ -31,33 +31,33 @@ def batch_test(
     # 初始化模型，只加载一次
     def single_chat(prompt):
         # 这里直接调用local_chat的主要推理部分
-        # 你可以把local_chat的推理部分抽成一个函数，然后这里调用
+        # 可以把local_chat的推理部分抽成一个函数，然后这里调用
         # 或者直接用os.system调用命令行（见下方注释）
         pass
-
+    
+    # 只加载一次模型
+    model, tokenizer, config = load_model(
+        model_path=model_path,
+        optimize_config_path=optimize_config_path,
+        gguf_path=gguf_path,
+        cpu_infer=cpu_infer,
+        use_swapper=use_swapper,
+        use_cuda_graph=use_cuda_graph,
+        mode=mode,
+        chunk_size=chunk_size
+    )
     # 或者直接用命令行方式批量调用
     for prompt in prompts:
         print("="*40)
-        print("Prompt:", prompt)
+        #print("Prompt:", prompt)
         # 直接用os.system调用local_chat.py
-        cmd = (
-            f'python3 -m ktransformers.local_chat '
-            f'--model_path "{model_path}" '
-            f'--optimize_config_path "{optimize_config_path}" '
-            f'--gguf_path "{gguf_path}" '
-            f'--max_new_tokens {max_new_tokens} '
-            f'--cpu_infer {cpu_infer} '
-            f'--use_cuda_graph {use_cuda_graph} '
-            f'--mode {mode} '
-            f'--use_swapper {use_swapper} '
-            f'--prompt_file /tmp/prompt.txt '
-            f'--chunk_size {chunk_size}'
-        )
+        output = run_inference(model, tokenizer, config, prompt, max_new_tokens=max_new_tokens)
         # 写入prompt到临时文件
-        with open("/tmp/prompt.txt", "w") as f:
-            f.write(prompt)
-        os.system(cmd)
+        #with open("/tmp/prompt.txt", "w") as f:
+         #   f.write(prompt)
+        #os.system(cmd)
         # 记录内存
+        #print("Output:",output)
         print("当前内存占用 (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024)
 
 if __name__ == "__main__":
