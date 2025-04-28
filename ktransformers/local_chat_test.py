@@ -124,6 +124,8 @@ def local_chat(
     if model.generation_config.pad_token_id is None:
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
     model.eval()
+    print("模型加载后内存占用 (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024)
+
     logging.basicConfig(level=logging.INFO)
 
     system = platform.system()
@@ -165,6 +167,7 @@ def local_chat(
             generated = prefill_and_generate(
                 model, tokenizer, input_tensor.cuda(), max_new_tokens, use_cuda_graph, mode = mode, force_think = force_think, chunk_size = chunk_prefill_size,
             )
+        print("生成后内存占用 (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024)
         break
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ Copyright (c) 2024 by KVCache.AI, All Rights Reserved.
 import os
 import platform
 import sys
+import psutil,os#用于内存监控调用
 
 project_dir = os.path.dirname(os.path.dirname(__file__))
 sys.path.insert(0, project_dir)
@@ -63,7 +64,8 @@ def local_chat(
     prompt_file : str | None = None,
     mode: str = "normal",
     force_think: bool = False,
-    chunk_size: int = 8192
+    chunk_size: int = 8192,
+    use_swapper: bool = False#是否启用swapper
 ):
 
     torch.set_grad_enabled(False)
@@ -125,6 +127,7 @@ def local_chat(
     if model.generation_config.pad_token_id is None:
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
     model.eval()
+    print("模型加载后内存占用 (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024)
     logging.basicConfig(level=logging.INFO)
 
     system = platform.system()
@@ -179,7 +182,7 @@ def local_chat(
             generated = prefill_and_generate(
                 model, tokenizer, input_tensor.cuda(), max_new_tokens, use_cuda_graph, mode = mode, force_think = force_think, chunk_size = chunk_size,
             )
-
+        print("推理后内存占用 (MB):", psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024)
 
 if __name__ == "__main__":
     fire.Fire(local_chat)

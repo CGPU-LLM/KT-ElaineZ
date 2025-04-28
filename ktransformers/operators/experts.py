@@ -136,21 +136,33 @@ class KExpertsCPU(KExpertsBase):
         orig_module: nn.Module = None,
         device: str = "cpu",
         out_device: str = "cuda", # this device mean which device the output should on. TODO: support cpu.
+        swapper: Swapper=None,
         **kwargs
     ):
         super().__init__(key, gguf_loader, config, orig_module, device, **kwargs)
         assert device.lower() == "cpu", "KExpertsCPU can only be loaded on CPU"
         self.n_routed_experts = n_routed_experts
         self.out_device = out_device
+        self.swapper=swapper 
 
     def load(self, w: dict | nn.Parameter | tuple | None = None, device:str|None = None, warmup:bool = False):
         if device:
             assert device.lower() == "cpu", "KExpertsCPU can only be loaded on CPU, Parameter \"device\" can be cpu or None."
-        if w is None: w = self.load_weights()[self.key]
+        # Swapper集成：优先从swapper获取权重 
+        if self.swapper is not None:
+            swapper_weights = self.swapper.get(self.key)
+            if swapper_weights is not None:
+                w = swapper_weights
+        if w is None: 
+            w = self.load_weights()[self.key]
+         # Swapper集成：权重放入swapper
+        if self.swapper is not None:
+            self.swapper.put(self.key, w)
+        
         self.gate = w["gate"]
         self.up = w["up"]
         self.down = w["down"]
-        self.gate_type = w["gate_type"]
+        self.gate_type = w["gate_type"]  
         self.up_type = w["up_type"]
         self.down_type = w["down_type"]
         gate_ptr = ctypes.addressof(
